@@ -1,0 +1,231 @@
+<!doctype html>
+<html>
+<head>
+    <title>松鼠逃生</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=550">
+    <style type="text/css">
+        html{margin:0;padding:0;height:100%; width: 100%}
+        body{margin:0;padding:0;overflow:hidden;color:#333;background:#333;height:100%;}
+        canvas{display: block;}
+
+
+    </style>
+</head>
+<body>
+
+
+<canvas id="Games"></canvas>
+
+<script type="text/javascript">
+var GameWidth=window.innerWidth,   //根据屏幕得到游戏的宽度
+    GameHeight=window.innerHeight, //根据屏幕得到游戏的高度
+    EARTH_POWER = .4,   //左右移动加速度
+    FLOOR_POWER = .7,   //上下移动加速度
+    FPS = 60,           //动画帧数
+    size=30,            //松鼠大小
+    squirrel
+var canvas=document.getElementById("Games")
+//设置游戏CANVAS大小
+canvas.setAttribute("width",GameWidth)
+canvas.setAttribute("height",GameHeight)
+//得到游戏的框架区域数值
+stageWidth=canvas.offsetWidth,
+stageHeight=canvas.offsetHeight;
+var context=canvas.getContext("2d");
+
+
+//填充CANVAS
+context.fillStyle="rgb(128, 128, 128)"
+context.fillRect(0,0,GameWidth,GameHeight);
+/*游戏基础参数*/
+function gameInit(){}
+/*楼层基础类*/
+function floor(){
+//生成固定楼层
+    context.fillStyle = 'white';
+    context.fillRect( GameWidth/2-90, GameHeight/2-30, 200, 10);
+}
+/*松鼠基础类*/
+function Squirrel(){
+    this.size = size,     //松鼠大小
+    this.playerX = GameWidth/2,   //初始X坐标
+    this.playerY = 0,                       //初始Y坐标
+    this.vSpeed = 2.5;
+    this.xSpeed = 0;
+    this.ySpeed = 0;
+    this.turnRight = true;
+    this.leftKeyDown = false;
+    this.rightKeyDown = false;
+    this.player();
+}
+
+Squirrel.prototype={
+    player:function(){    //最开始，将松鼠画入
+        context.fillStyle = 'blue';
+        context.fillRect( this.playerX, this.playerY, this.size, this.size);
+
+    },
+    move:function(){   //识别键盘/重力感应操作，
+        if(this.leftKeyDown){
+            this.turnRight = false;
+            this.xSpeed += this.vSpeed;
+        }else if(this.rightKeyDown){
+            this.turnRight = true;
+            this.xSpeed += this.vSpeed;
+        }
+        this.xSpeed *= FLOOR_POWER;
+        this.ySpeed += EARTH_POWER;
+        if(this.turnRight){
+            this.playerX += this.xSpeed;
+        } else {
+            this.playerX -= this.xSpeed;
+        }
+        this.playerY += this.ySpeed;
+        if(this.playerX < 0){
+            this.playerX = 0;
+        }else if(this.playerX > stageWidth - this.size){
+            this.playerX = stageWidth - this.size;
+        }
+
+        if (this.hitFloor({"left":GameWidth/2-90,"right":GameWidth/2+110,"top":GameHeight/2-30,"bottom":GameHeight/2-20})){
+            this.ySpeed = 0;
+            EARTH_POWER=0
+            console.log(this.ySpeed)
+        }
+        else{EARTH_POWER=.4}
+
+       // if(this.y > stageHeight || this.y < 0){
+        //    gameOver();
+       //     return;
+      //  }
+        //console.log(this.playerX)
+    },
+    render : function(){     //将左右移动松鼠后的结果进行绘制
+        this.move();
+        context.fillStyle = 'blue';
+        context.fillRect(this.playerX, this.playerY, this.size, this.size);
+
+
+        //console.log(this.y)
+    },
+    hitFloor : function(obj){
+          range=obj;
+        if(this.playerX < range.right && this.playerX+this.size > range.left && this.playerY+this.size > range.top && this.playerY < range.top){
+            return true;
+        } else {
+            return false;
+        }
+    },
+    getRange : function(){
+        var left = this.x,
+                right = this.x + this.width,
+                top = this.y,
+                bottom = this.y + this.height;
+        return {
+            left : left,
+            right : right,
+            top : top,
+            bottom : bottom
+        }
+    },
+    destroy : function(){
+
+
+    }
+}
+/*松鼠挂了*/
+function gameOver(){
+    gameOverNode.style.display = "block";
+    for(var i=floors.length-1;i>=0;i--){
+        floors[i].destroy();
+    }
+    people.destroy();
+    gameOverFlag = true;
+}
+/*基础循环*/
+function mainLoop(){
+
+    context.fillStyle="rgb(128, 128, 128)"
+    context.fillRect(0,0,GameWidth,GameHeight);
+    floor();
+    squirrel.render();
+
+   // addFloors();
+    setTimeout(mainLoop,1000/FPS);
+}
+/*开始游戏*/
+function startGame(){
+    squirrel=new Squirrel()
+    mainLoop();
+
+    //绑定按键
+    document.onkeydown = function(e){
+        e = e || window.event;
+         if(!squirrel) return;
+        switch(e.keyCode){
+            case 37 :
+                squirrel.leftKeyDown = true;
+                break;
+            case 39 :
+                squirrel.rightKeyDown = true;
+                break;
+        }
+    }
+
+    document.onkeyup = function(e){
+
+        e = e || window.event;
+         if(!squirrel) return;
+        switch(e.keyCode){
+            case 37 :
+                squirrel.leftKeyDown = false;
+                break;
+            case 39 :
+                squirrel.rightKeyDown = false;
+                break;
+        }
+    }
+
+
+
+
+   //
+
+    window.ondeviceorientation =  function(e)
+    {
+        var ang;
+        var o = window.orientation;  //获取设备方向
+        if(o == 90){
+            ang = e.beta;  //设备横向1
+        }
+        else if(o == -90){
+            ang = -e.beta;  //设备横向2
+        }
+        else if(o == 0){
+            ang = e.gamma;    //设备纵向
+        }
+
+        if(ang > 5)
+        {
+            squirrel.rightKeyDown = true;
+        }
+        else if(ang < -5)
+        {
+            squirrel.leftKeyDown = true;
+        }
+        else
+        {
+            squirrel.leftKeyDown = false;
+            squirrel.rightKeyDown = false;
+        }
+    }
+    //
+}
+
+//
+startGame()
+
+</script>
+</body>
+</html>
