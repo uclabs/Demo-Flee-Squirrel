@@ -19,19 +19,33 @@
 
 <script type="text/javascript">
 var GameWidth=window.innerWidth,   //根据屏幕得到游戏的宽度
-    GameHeight=window.innerHeight, //根据屏幕得到游戏的高度
-    EARTH_POWER = .4,   //左右移动加速度
-    FLOOR_POWER = .7,   //上下移动加速度
-    FPS = 60,           //动画帧数
-    size=30,            //松鼠大小
-    squirrel
+        GameHeight=window.innerHeight, //根据屏幕得到游戏的高度
+        EARTH_POWER = .4,   //上下移动加速度
+        FLOOR_POWER = .7,   //左右移动加速度
+        FPS = 60,           //动画帧数
+        size=30,            //松鼠大小
+        isOver= true,  //游戏初始标识
+        squirrel,
+        floor
 var canvas=document.getElementById("Games")
+oOtherPara = {
+    num:10,
+    vs:2,
+    canvas:canvas,
+    nVSpaceParaForHardness:100
+};
+oRole = {
+    hs:10, //水平速度
+    vs:30,             //垂直速度
+    width:20,          //人物宽度
+    height:30          //人物高度
+};
 //设置游戏CANVAS大小
 canvas.setAttribute("width",GameWidth)
 canvas.setAttribute("height",GameHeight)
 //得到游戏的框架区域数值
 stageWidth=canvas.offsetWidth,
-stageHeight=canvas.offsetHeight;
+        stageHeight=canvas.offsetHeight;
 var context=canvas.getContext("2d");
 
 
@@ -39,18 +53,13 @@ var context=canvas.getContext("2d");
 context.fillStyle="rgb(128, 128, 128)"
 context.fillRect(0,0,GameWidth,GameHeight);
 /*游戏基础参数*/
-function gameInit(){}
-/*楼层基础类*/
-function floor(){
-//生成固定楼层
-    context.fillStyle = 'white';
-    context.fillRect( GameWidth/2-90, GameHeight/2-30, 200, 10);
-}
+
+
 /*松鼠基础类*/
 function Squirrel(){
-    this.size = size,     //松鼠大小
-    this.playerX = GameWidth/2,   //初始X坐标
-    this.playerY = 0,                       //初始Y坐标
+    this.size = size;     //松鼠大小
+    this.playerX = GameWidth/2;   //初始X坐标
+    this.playerY = 0;                       //初始Y坐标
     this.vSpeed = 2.5;
     this.xSpeed = 0;
     this.ySpeed = 0;
@@ -88,17 +97,18 @@ Squirrel.prototype={
             this.playerX = stageWidth - this.size;
         }
 
-        if (this.hitFloor({"left":GameWidth/2-90,"right":GameWidth/2+110,"top":GameHeight/2-30,"bottom":GameHeight/2-20})){
-            this.ySpeed = 0;
+        if (this.hitFloor()){
+            this.ySpeed = -2.5;
             EARTH_POWER=0
-            console.log(this.ySpeed)
+
         }
         else{EARTH_POWER=.4}
 
-       // if(this.y > stageHeight || this.y < 0){
-        //    gameOver();
-       //     return;
-      //  }
+
+        if(this.playerY > stageHeight || this.playerY < 0){
+            gameOver();
+            return;
+        }
         //console.log(this.playerX)
     },
     render : function(){     //将左右移动松鼠后的结果进行绘制
@@ -109,25 +119,29 @@ Squirrel.prototype={
 
         //console.log(this.y)
     },
-    hitFloor : function(obj){
-          range=obj;
-        if(this.playerX < range.right && this.playerX+this.size > range.left && this.playerY+this.size > range.top && this.playerY < range.top){
-            return true;
-        } else {
-            return false;
+    hitFloor : function(){
+        //deadNum = 0;
+        for (_i = 0, _len = aryBoards.length; _i < _len; _i++) {
+
+            value = aryBoards[_i];
+            console.log(_i)
+            if(this.playerX < value.nX+value.nWidth && this.playerX+this.size > value.nX && this.playerY+this.size > value.nY && this.playerY < value.nY){
+                console.log("已碰撞")
+                return true;
+
+            } else {
+                // return false;
+            }
+
+
+
         }
-    },
-    getRange : function(){
-        var left = this.x,
-                right = this.x + this.width,
-                top = this.y,
-                bottom = this.y + this.height;
-        return {
-            left : left,
-            right : right,
-            top : top,
-            bottom : bottom
-        }
+
+
+
+
+
+
     },
     destroy : function(){
 
@@ -136,33 +150,40 @@ Squirrel.prototype={
 }
 /*松鼠挂了*/
 function gameOver(){
-    gameOverNode.style.display = "block";
-    for(var i=floors.length-1;i>=0;i--){
-        floors[i].destroy();
-    }
-    people.destroy();
-    gameOverFlag = true;
+    isOver = true;
+    alert("over")
 }
 /*基础循环*/
 function mainLoop(){
-
+    if(isOver) return; //如果游戏结束，则不进行循环
     context.fillStyle="rgb(128, 128, 128)"
     context.fillRect(0,0,GameWidth,GameHeight);
-    floor();
+
+    if (aryBoards.length === 1) {
+        //  clearInterval(clarr);
+        aryBoards = fCreateBoards(oRole, oOtherPara);
+    }
+    else {
+        fDrawBoards(aryBoards, oOtherPara);
+    }
     squirrel.render();
 
-   // addFloors();
+    // addFloors();
     setTimeout(mainLoop,1000/FPS);
 }
 /*开始游戏*/
 function startGame(){
-    squirrel=new Squirrel()
+    isOver = false;
+    //floor=new Floor();
+    squirrel=new Squirrel();
+    aryBoards = fCreateBoards(oRole, oOtherPara);
+    console.log(aryBoards.length)
     mainLoop();
 
     //绑定按键
     document.onkeydown = function(e){
         e = e || window.event;
-         if(!squirrel) return;
+        if(!squirrel) return;
         switch(e.keyCode){
             case 37 :
                 squirrel.leftKeyDown = true;
@@ -176,7 +197,7 @@ function startGame(){
     document.onkeyup = function(e){
 
         e = e || window.event;
-         if(!squirrel) return;
+        if(!squirrel) return;
         switch(e.keyCode){
             case 37 :
                 squirrel.leftKeyDown = false;
@@ -190,7 +211,7 @@ function startGame(){
 
 
 
-   //
+    //
 
     window.ondeviceorientation =  function(e)
     {
@@ -222,6 +243,142 @@ function startGame(){
     }
     //
 }
+
+
+/*
+ nX:木板横坐标
+ nY:木板纵坐标
+ nWidth:木板宽度
+ nHeight:木板高度
+ nVSpace:木板距离上一个木板的垂直距离，下一个木板的上边缘同上一个木板的下边缘的距离
+ sColor:颜色值
+ nLiveState:0：未进入屏幕   1：在屏幕中   2：从屏幕中消失
+ nType:1：普通木板   2：滚动木板  3：锯齿木板
+ */
+
+
+(function () {
+
+    this.Board = (function () {
+
+        function Board(nX, nY, nWidth, nHeight, nVSpace, sColor, nLiveState, nType) {
+            this.nX = nX;
+            this.nY = nY;
+            this.nWidth = nWidth != null ? nWidth : screen.availWidth * 0.25;
+            this.nHeight = nHeight != null ? nHeight : 30;
+            this.nVSpace = nVSpace != null ? nVSpace : 0;
+            this.sColor = sColor != null ? sColor : 'white';
+            this.nLiveState = nLiveState != null ? nLiveState : 1;
+            this.nType = nType != null ? nType : 1;
+        }
+
+        return Board;
+
+    })();
+
+}).call(this);
+
+(function() {
+
+    this.fCreateBoards = function(oRole, oOtherPara) {
+        var aryBoards, curBoard, fGetRandomBy, firBoard, i, lastBoard, lower, nBoardMaxVSpace, nBoardMinVSpace, nBoardVSpeed, nBorderNum, nCanvasHeight, nCanvasWidth, nRoleHSpeed, nRoleHeight, nRoleVSpeed, nRoleWidth, nVSpaceParaForHardness, rangeX, t, upper, vSpace;
+        fGetRandomBy = function(num1, num2) {
+            var over, result, under;
+            if (num1 > num2) {
+                under = num2;
+                over = num1;
+            } else {
+                under = num1;
+                over = num2;
+            }
+            return result = (Math.random() * (over - under + 1) >>> 0) + under;
+        };
+        nBorderNum = oOtherPara.num;
+        nBoardVSpeed = oOtherPara.vs;
+        nCanvasHeight = +oOtherPara.canvas.getAttribute('height');
+        nCanvasWidth = +oOtherPara.canvas.getAttribute('width');
+        nVSpaceParaForHardness = oOtherPara.nVSpaceParaForHardness;
+        nRoleHSpeed = oRole.hs;
+        nRoleVSpeed = oRole.vs;
+        nRoleWidth = oRole.width;
+        nRoleHeight = oRole.height;
+        aryBoards = [];
+        firBoard = new Board();
+        firBoard.nX = fGetRandomBy(0, screen.availWidth - firBoard.nWidth);
+        firBoard.nY = nCanvasHeight - firBoard.nHeight;
+        firBoard.nWidth = nCanvasWidth * 0.25;
+        aryBoards.push(firBoard);
+        nBoardMinVSpace = nRoleHeight;
+        nBoardMaxVSpace = nCanvasHeight - firBoard.nHeight * 2 - nRoleHeight - nVSpaceParaForHardness;
+        i = 0;
+        while (i < nBorderNum - 1) {
+            lastBoard = aryBoards[i++];
+            curBoard = new Board();
+            curBoard.nLiveState = 0;
+            curBoard.nWidth = nCanvasWidth * 0.25;
+            vSpace = fGetRandomBy(nBoardMinVSpace, nBoardMaxVSpace);
+            t = (vSpace + lastBoard.nHeight) / (nBoardVSpeed + nRoleVSpeed);
+            upper = (nRoleHSpeed * t - nRoleWidth) + lastBoard.nX + lastBoard.nWidth;
+            lower = lastBoard.nX - (nRoleHSpeed * t - nRoleWidth) - curBoard.nWidth;
+            rangeX = upper + curBoard.nWidth > screen.availWidth ? lower : upper;
+            curBoard.nX = fGetRandomBy(rangeX, lastBoard.nX);
+            curBoard.nVSpace = vSpace;
+            aryBoards.push(curBoard);
+        }
+        // console.log(aryBoards)
+        return aryBoards;
+    };
+
+}).call(this);
+
+
+// Generated by CoffeeScript 1.4.0
+(function() {
+
+    this.fDrawBoards = function(aryBoards, oOtherPara) {
+        var ctx, deadNum, lastBoardY, nBoardVSpeed, nCanvasHeight, nCanvasWidth, value, _i, _len;
+        nBoardVSpeed = oOtherPara.vs;
+        ctx = oOtherPara.canvas.getContext('2d');
+        nCanvasWidth = oOtherPara.canvas.getAttribute('width');
+        nCanvasHeight = oOtherPara.canvas.getAttribute('height');
+        ctx.clearRect(0, 0, nCanvasWidth, nCanvasHeight);
+        //ctx.fillStyle = 'black';
+        ctx.fillRect(0, 0, nCanvasWidth, nCanvasHeight);
+        ctx.fillStyle = 'white';
+        deadNum = 0;
+        for (_i = 0, _len = aryBoards.length; _i < _len; _i++) {
+            value = aryBoards[_i];
+            // console.log(_i+':hah')
+            if (value.nLiveState === 1) {
+                if (value.nY >= 0) {
+                    ctx.fillStyle = value.sColor;
+                    ctx.fillRect(value.nX, value.nY, value.nWidth, value.nHeight);
+                    value.nY -= nBoardVSpeed;
+                    lastBoardY = value.nY + value.nHeight;
+                } else {
+                    deadNum++;
+                    value.nLiveState = 2;
+                }
+            } else {
+                if (value.nLiveState === 0 && value.nVSpace <= nCanvasHeight - lastBoardY - value.nHeight) {
+                    value.nLiveState = 1;
+                    value.nY = lastBoardY + value.nVSpace;
+                    lastBoardY = value.nY + value.nHeight;
+                    ctx.fillStyle = value.sColor;
+                    ctx.fillRect(value.nX, value.nY, value.nWidth, value.nHeight);
+                }
+                break;
+            }
+        }
+        while (deadNum--) {
+            aryBoards.shift();
+        }
+        return aryBoards;
+    };
+
+}).call(this);
+
+
 
 //
 startGame()
